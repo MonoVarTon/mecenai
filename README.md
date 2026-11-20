@@ -100,4 +100,4 @@ The engine, the MCP server, tests and evaluation results are open. Clients' cata
 
 ## Built by
 
-[Aliaksei](https://github.com/MonoVarTon) — architecture, backend, automation, TON — at **369 Aether**, a studio building websites for artists and galleries worldwide.
+[Alexey](https://github.com/MonoVarTon) — architecture, backend, automation, TON — at **369 Aether**, a studio building websites for artists and galleries worldwide.
