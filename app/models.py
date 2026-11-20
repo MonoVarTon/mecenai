@@ -60,3 +60,66 @@ class ScriptedModel:
     @staticmethod
     def _end(text: str) -> dict:
         return {"stop_reason": "end_turn", "content": [{"type": "text", "text": text}]}
+
+
+class OpenAICompatibleModel:
+    """Real LLM over any OpenAI-compatible endpoint (Groq by default).
+    Translates our Messages-API-style conversation to chat/completions and back,
+    so the agent loop does not depend on the provider."""
+
+    def __init__(self, api_key: str, model: str, url: str, transport=None, timeout: float = 30.0):
+        import httpx
+
+        if not api_key:
+            raise RuntimeError("API key is missing: set it in .env")
+        self.model = model
+        self.url = url
+        self.client = httpx.Client(timeout=timeout, transport=transport,
+                                   headers={"Authorization": f"Bearer {api_key}"})
+
+    @staticmethod
+    def to_openai(system: str, tools: list, messages: list) -> dict:
+        out = [{"role": "system", "content": system}]
+        for m in messages:
+            if isinstance(m["content"], str):
+                out.append({"role": m["role"], "content": m["content"]})
+            elif m["role"] == "assistant":
+                text = " ".join(b["text"] for b in m["content"] if b["type"] == "text") or None
+                calls = [{"id": b["id"], "type": "function",
+                          "function": {"name": b["name"], "arguments": json.dumps(b["input"])}}
+                         for b in m["content"] if b["type"] == "tool_use"]
+                out.append({"role": "assistant", "content": text, "tool_calls": calls})
+            else:  # tool results
+                for b in m["content"]:
+                    out.append({"role": "tool", "tool_call_id": b["tool_use_id"], "content": b["content"]})
+        return {
+            "messages": out,
+            "tools": [{"type": "function", "function": {"name": t["name"], "description": t["description"],
+                                                         "parameters": t["input_schema"]}} for t in tools],
+        }
+
+    @staticmethod
+    def from_openai(data: dict) -> dict:
+        msg = data["choices"][0]["message"]
+        content = []
+        if msg.get("content"):
+            content.append({"type": "text", "text": msg["content"]})
+        for c in msg.get("tool_calls") or []:
+            content.append({"type": "tool_use", "id": c["id"], "name": c["function"]["name"],
+                            "input": json.loads(c["function"]["arguments"] or "{}")})
+        stop = "tool_use" if any(b["type"] == "tool_use" for b in content) else "end_turn"
+        return {"stop_reason": stop, "content": content, "usage": data.get("usage", {})}
+
+    def create(self, system: str, tools: list, messages: list) -> dict:
+        body = {"model": self.model, "temperature": 0.2, **self.to_openai(system, tools, messages)}
+        r = self.client.post(self.url, json=body)
+        r.raise_for_status()
+        return self.from_openai(r.json())
+
+
+def build_model():
+    from . import config
+
+    if config.MODEL_BACKEND == "groq":
+        return OpenAICompatibleModel(config.GROQ_API_KEY, config.GROQ_MODEL, config.GROQ_URL)
+    return ScriptedModel()

@@ -22,16 +22,17 @@ def answer(model, question: str) -> dict:
             text = " ".join(b["text"] for b in reply["content"] if b["type"] == "text")
             return {"reply": text, "tool_calls": tool_calls}
 
-        call = next(b for b in reply["content"] if b["type"] == "tool_use")
-        tool_calls.append(call["name"])
-        result = run_tool(call["name"], call["input"])
-        messages += [
-            {"role": "assistant", "content": reply["content"]},
-            {"role": "user", "content": [{
+        results = []
+        for call in (b for b in reply["content"] if b["type"] == "tool_use"):
+            tool_calls.append(call["name"])
+            results.append({
                 "type": "tool_result",
                 "tool_use_id": call["id"],
-                "content": json.dumps(result, ensure_ascii=False),
-            }]},
+                "content": json.dumps(run_tool(call["name"], call["input"]), ensure_ascii=False),
+            })
+        messages += [
+            {"role": "assistant", "content": reply["content"]},
+            {"role": "user", "content": results},
         ]
 
     return {"reply": "Let me check with the artist and come back to you.", "tool_calls": tool_calls}

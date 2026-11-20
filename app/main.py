@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 from . import concierge
-from .models import ScriptedModel
+from .models import build_model
 
 app = FastAPI(title="Mecenai", version="0.1.0")
-model = ScriptedModel()
+model = build_model()
 
 
 class ChatRequest(BaseModel):
