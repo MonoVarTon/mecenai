@@ -48,8 +48,15 @@ def test_loop_stops_after_max_steps():
         def create(self, **_):
             return {"stop_reason": "tool_use",
                     "content": [{"type": "tool_use", "id": "t", "name": "find_artworks",
-                                 "input": {"series": "Quiet Harbors"}}]}
+                                 "input": {"query": "Quiet Harbors"}}]}
 
     data = concierge.answer(StuckModel(), "hi")
     assert len(data["tool_calls"]) == concierge.MAX_STEPS
     assert "check with the artist" in data["reply"]
+
+
+def test_find_artworks_hides_prices_and_matches_titles():
+    from app.tools import run_tool
+    found = run_tool("find_artworks", {"query": "Quiet Harbor I"})
+    assert [a["id"] for a in found] == ["A1", "A2"] or found[0]["id"] == "A1"
+    assert all("price_rule" not in a for a in found)

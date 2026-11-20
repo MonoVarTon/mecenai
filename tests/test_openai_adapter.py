@@ -13,7 +13,7 @@ def fake_provider(request: httpx.Request) -> httpx.Response:
     if body["messages"][-1]["role"] == "user":
         msg = {"role": "assistant", "content": None, "tool_calls": [{
             "id": "call_1", "type": "function",
-            "function": {"name": "find_artworks", "arguments": json.dumps({"series": "Quiet Harbors"})}}]}
+            "function": {"name": "find_artworks", "arguments": json.dumps({"query": "Quiet Harbors"})}}]}
     else:
         assert body["messages"][-1]["role"] == "tool"
         msg = {"role": "assistant", "content": "Quiet Harbor I is available, price on request."}

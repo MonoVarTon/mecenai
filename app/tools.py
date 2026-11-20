@@ -7,11 +7,12 @@ CATALOG = json.loads((Path(__file__).parent / "catalog.json").read_text(encoding
 TOOLS = [
     {
         "name": "find_artworks",
-        "description": "Find artworks in the catalogue by series name.",
+        "description": "Find artworks by series name or artwork title (partial match). "
+                       "Returns facts only, without prices.",
         "input_schema": {
             "type": "object",
-            "properties": {"series": {"type": "string"}},
-            "required": ["series"],
+            "properties": {"query": {"type": "string", "description": "series name or artwork title"}},
+            "required": ["query"],
         },
     },
     {
@@ -43,8 +44,12 @@ def describe_price(rule: str) -> str:
 
 def run_tool(name: str, args: dict):
     if name == "find_artworks":
-        series = args["series"].strip().lower()
-        return [a for a in CATALOG["artworks"] if a["series"].lower() == series]
+        q = str(args.get("query") or args.get("series") or "").strip().lower().rstrip("s")
+        if not q:
+            return []
+        found = [a for a in CATALOG["artworks"] if q in a["series"].lower() or q in a["title"].lower()]
+        # prices are never exposed here: only get_price_rule returns approved wording
+        return [{k: v for k, v in a.items() if k != "price_rule"} for a in found]
     if name == "get_price_rule":
         art = next((a for a in CATALOG["artworks"] if a["id"] == args["artwork_id"]), None)
         if art is None:

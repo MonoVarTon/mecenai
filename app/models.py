@@ -21,7 +21,7 @@ class ScriptedModel:
             series = next((s for s in series_names() if s.lower() in q), None)
             if series is None:
                 return self._end("I don't want to guess — let me check with the artist and come back to you.")
-            return self._tool("find_artworks", {"series": series}, "Let me check the catalogue.")
+            return self._tool("find_artworks", {"query": series}, "Let me check the catalogue.")
 
         # 2) A tool result came back.
         result = json.loads(last["content"][0]["content"])
