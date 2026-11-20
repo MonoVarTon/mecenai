@@ -5,7 +5,7 @@ Mecenai answers collectors 24/7 in their own language, knows every artwork in th
 
 > *Mecenai* — from *mecenate*, a patron of the arts, + AI. It connects artists with the collectors who will support them.
 
-**Status:** early development (November 2026). This README describes where the product is going; each section is marked with its current state.
+**Status:** v0.1 (November 2026) — working service skeleton with tool calls and tests on a scripted model. This README describes where the product is going; each capability is marked with its current state.
 
 ## Why
 
@@ -17,7 +17,7 @@ An artist's or gallery's website is often a beautiful catalogue that cannot answ
 |---|---|---|
 | Knows every artwork: story, technique, size, series, intent | retrieval over the catalogue (RAG, vector search) | planned |
 | Speaks in the artist's voice, in the visitor's language (English, Arabic, Russian, …) | LLM with artist-approved instructions | planned |
-| Quotes prices **only** by rules the artist approved — never negotiates or invents | tool calls with hard rules + tests | planned |
+| Quotes prices **only** by rules the artist approved — never negotiates or invents | tool calls with hard rules + tests | **v0.1** — scripted model |
 | Understands who is asking (collector, curator, press) and guides to a viewing | agent with state | planned |
 | Hands off to a human in Telegram / WhatsApp | webhooks, n8n | planned |
 | Exposes the catalogue to other AI agents | MCP server | planned |
@@ -25,6 +25,44 @@ An artist's or gallery's website is often a beautiful catalogue that cannot answ
 | Insights for the artist: what collectors ask about | analytics | planned |
 | Measured quality: no invented prices or facts | automated evaluations, published in this README | planned |
 | One engine, many clients — each with its own catalogue and voice | multi-tenant service, Docker, cloud | planned |
+
+## Run it (v0.1)
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+```bash
+curl localhost:8000/health
+curl -X POST localhost:8000/chat -H "content-type: application/json" \
+     -d '{"message": "What do you have from the Quiet Harbors series?"}'
+```
+
+v0.1 runs offline on a scripted model that speaks the Messages API format, so it needs no API key. The catalogue belongs to a fictional artist.
+
+```
+app/
+  main.py        FastAPI: GET /health, POST /chat
+  concierge.py   agent loop: model asks for a tool -> code runs it -> model continues
+  tools.py       find_artworks, get_price_rule (artist-approved wording only)
+  models.py      scripted model (a real LLM backend comes next)
+  catalog.json   fictional demo catalogue
+tests/           health, price rules, hand-off, input validation, loop limit
+```
+
+Tests: `pytest -q` — they also run on every push (GitHub Actions).
+
+## Roadmap
+
+| Version | What |
+|---|---|
+| v0.1 | service skeleton, tool calls, price rules, tests — **done** |
+| v0.2 | real LLM backend behind the same interface; multilingual answers |
+| v0.3 | MCP server: the catalogue for other AI agents |
+| v0.4 | retrieval over artwork stories (RAG) |
+| v0.5 | collector profiles and hand-off to Telegram |
 
 ## Principles
 
