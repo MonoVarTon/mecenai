@@ -17,5 +17,6 @@ load_env()
 
 MODEL_BACKEND = os.getenv("MECENAI_MODEL", "scripted")          # scripted | groq
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("MECENAI_GROQ_MODEL", "qwen/qwen3.8-27b")
+GROQ_MODEL = os.getenv("MECENAI_GROQ_MODEL", "openai/gpt-oss-120b")    # chat
+VISION_MODEL = os.getenv("MECENAI_VISION_MODEL", "qwen/qwen3.8-27b")  # photo questions (planned)
 GROQ_URL = os.getenv("MECENAI_GROQ_URL", "https://api.groq.com/openai/v1/chat/completions")

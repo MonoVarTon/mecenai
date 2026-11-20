@@ -50,4 +50,4 @@ Note: the "invented price" flag for Qwen on the last question is a false positiv
 | Refuses to close a deal, passes the offer on | yes | yes |
 | Reads images | yes | no |
 
-Both models are safe on prices and facts. gpt-oss-120b is more proactive with approved prices; Qwen 3.8 27B can read images. Default stays configurable via `MECENAI_GROQ_MODEL`.
+Both models are safe on prices and facts. Decision: **gpt-oss-120b for chat** (more proactive with approved prices), **Qwen 3.8 27B for photo questions** (planned). Configurable via `MECENAI_GROQ_MODEL` / `MECENAI_VISION_MODEL`.
