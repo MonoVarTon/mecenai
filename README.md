@@ -5,7 +5,7 @@ Mecenai answers collectors 24/7 in their own language, knows every artwork in th
 
 > *Mecenai* — from *mecenate*, a patron of the arts, + AI. It connects artists with the collectors who will support them.
 
-**Status:** v0.1 (November 2026) — working service skeleton with tool calls and tests on a scripted model. This README describes where the product is going; each capability is marked with its current state.
+**Status:** v0.3 (November 2026) — concierge on a real LLM (Groq), model evaluation, and an MCP server for other AI agents. This README describes where the product is going; each capability is marked with its current state.
 
 ## Why
 
@@ -16,14 +16,14 @@ An artist's or gallery's website is often a beautiful catalogue that cannot answ
 | Capability | How | State |
 |---|---|---|
 | Knows every artwork: story, technique, size, series, intent | retrieval over the catalogue (RAG, vector search) | planned |
-| Speaks in the artist's voice, in the visitor's language (English, Arabic, Russian, …) | LLM with artist-approved instructions | planned |
+| Speaks in the artist's voice, in the visitor's language (English, Arabic, Russian, …) | LLM with artist-approved instructions | **v0.2** — gpt-oss-120b via Groq |
 | Quotes prices **only** by rules the artist approved — never negotiates or invents | tool calls with hard rules + tests | **v0.1** — scripted model |
 | Understands who is asking (collector, curator, press) and guides to a viewing | agent with state | planned |
 | Hands off to a human in Telegram / WhatsApp | webhooks, n8n | planned |
-| Exposes the catalogue to other AI agents | MCP server | planned |
+| Exposes the catalogue to other AI agents | MCP server | **v0.3** — tools, resource, prompt |
 | Optional certificate of authenticity on TON | TON, IPFS | planned |
 | Insights for the artist: what collectors ask about | analytics | planned |
-| Measured quality: no invented prices or facts | automated evaluations, published in this README | planned |
+| Measured quality: no invented prices or facts | automated evaluations | **started** — [model comparison](docs/evals/2026-11-20-model-comparison.md) |
 | One engine, many clients — each with its own catalogue and voice | multi-tenant service, Docker, cloud | planned |
 
 ## Run it (v0.1)
@@ -47,10 +47,33 @@ app/
   main.py        FastAPI: GET /health, POST /chat
   concierge.py   agent loop: model asks for a tool -> code runs it -> model continues
   tools.py       find_artworks, get_price_rule (artist-approved wording only)
-  models.py      scripted model (a real LLM backend comes next)
+  models.py      scripted model for tests + any OpenAI-compatible LLM (Groq)
   catalog.json   fictional demo catalogue
-tests/           health, price rules, hand-off, input validation, loop limit
+mcp_server.py    MCP server: tools, resource, prompt
+scripts/         model comparison
+docs/evals/      evaluation results
+tests/           API, price rules, hand-off, model adapter, MCP server
 ```
+
+### MCP server
+
+Any MCP client (Claude Desktop, IDEs, other agents) can use the catalogue:
+
+| Kind | Name | What |
+|---|---|---|
+| tool | `find_artworks` | search by series or title, facts only |
+| tool | `get_price_rule` | the only way to get a price — artist-approved wording |
+| tool | `request_viewing` | ask the artist for a viewing (validated, the artist replies personally) |
+| resource | `catalog://artist` | the whole catalogue without prices |
+| prompt | `recommend_artwork` | pick works for a collector's wishes |
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{"mcpServers": {"mecenai": {"command": "python", "args": ["/path/to/mecenai/mcp_server.py"]}}}
+```
+
+Real model: copy `.env.example` to `.env`, set `MECENAI_MODEL=groq` and `GROQ_API_KEY`.
 
 Tests: `pytest -q` — they also run on every push (GitHub Actions).
 
@@ -59,8 +82,8 @@ Tests: `pytest -q` — they also run on every push (GitHub Actions).
 | Version | What |
 |---|---|
 | v0.1 | service skeleton, tool calls, price rules, tests — **done** |
-| v0.2 | real LLM backend behind the same interface; multilingual answers |
-| v0.3 | MCP server: the catalogue for other AI agents |
+| v0.2 | real LLM backend behind the same interface; model comparison — **done** |
+| v0.3 | MCP server: the catalogue for other AI agents — **done** |
 | v0.4 | retrieval over artwork stories (RAG) |
 | v0.5 | collector profiles and hand-off to Telegram |
 
