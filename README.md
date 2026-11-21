@@ -5,7 +5,9 @@ Mecenai answers collectors 24/7 in their own language, knows every artwork in th
 
 > *Mecenai* — from *mecenate*, a patron of the arts, + AI. It connects artists with the collectors who will support them.
 
-**Status:** v0.3 (November 2026) — concierge on a real LLM (Groq), model evaluation, and an MCP server for other AI agents. This README describes where the product is going; each capability is marked with its current state.
+**▶ Live demo: [mecenai.onrender.com](https://mecenai.onrender.com)** · MCP endpoint: `https://mecenai.onrender.com/mcp/` (the free instance sleeps when idle — the first request may take up to a minute)
+
+**Status:** v0.4 (November 2026) — concierge on a real LLM (Groq), model evaluation, an MCP server for other AI agents, and a public demo. This README describes where the product is going; each capability is marked with its current state.
 
 ## Why
 
@@ -67,7 +69,9 @@ Any MCP client (Claude Desktop, IDEs, other agents) can use the catalogue:
 | resource | `catalog://artist` | the whole catalogue without prices |
 | prompt | `recommend_artwork` | pick works for a collector's wishes |
 
-Claude Desktop (`claude_desktop_config.json`):
+Remote (any client that supports Streamable HTTP): `https://mecenai.onrender.com/mcp/`
+
+Local, Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {"mcpServers": {"mecenai": {"command": "python", "args": ["/path/to/mecenai/mcp_server.py"]}}}
@@ -84,8 +88,9 @@ Tests: `pytest -q` — they also run on every push (GitHub Actions).
 | v0.1 | service skeleton, tool calls, price rules, tests — **done** |
 | v0.2 | real LLM backend behind the same interface; model comparison — **done** |
 | v0.3 | MCP server: the catalogue for other AI agents — **done** |
-| v0.4 | retrieval over artwork stories (RAG) |
-| v0.5 | collector profiles and hand-off to Telegram |
+| v0.4 | public demo and MCP over HTTP (Render), abuse limits — **done** |
+| v0.5 | retrieval over artwork stories (RAG) |
+| v0.6 | collector profiles and hand-off to Telegram |
 
 ## Principles
 
