@@ -60,3 +60,18 @@ def test_find_artworks_hides_prices_and_matches_titles():
     found = run_tool("find_artworks", {"query": "Quiet Harbor I"})
     assert [a["id"] for a in found] == ["A1", "A2"] or found[0]["id"] == "A1"
     assert all("price_rule" not in a for a in found)
+
+
+def test_home_catalog_and_mcp_http():
+    assert client.get("/").status_code == 200
+    cat = client.get("/catalog").json()
+    assert len(cat["artworks"]) == 3 and "price_rule" not in str(cat)
+
+
+def test_public_demo_rate_limit(monkeypatch):
+    from app import main
+    monkeypatch.setattr(main, "PER_MINUTE", 2)
+    main._visits.clear()
+    codes = [client.post("/chat", json={"message": "hi"}, headers={"x-forwarded-for": "9.9.9.9"}).status_code
+             for _ in range(3)]
+    assert codes == [200, 200, 429]

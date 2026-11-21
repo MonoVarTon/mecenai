@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mecenai — AI concierge for artists</title>
+<meta name="description" content="Live demo: an AI sales concierge that answers collectors in their language and never invents prices.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f0e0c;--panel:#17150f;--line:#2b271f;--ink:#efe8dc;--mut:#a39a8a;--gold:#c9a96e;--gold2:#e4cc97;--me:#26221a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#2a2215 0%,transparent 60%),var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif;min-height:100vh}
+a{color:var(--gold2)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 40px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px}
+.brand{font:600 34px/1 "Cormorant Garamond",serif;letter-spacing:.5px}
+.brand i{color:var(--gold);font-style:italic}
+.tag{color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1.15fr;gap:28px;margin-top:28px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+h2{font:500 26px/1.2 "Cormorant Garamond",serif;margin:0 0 6px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 18px}
+.cards{display:grid;gap:14px}
+.card{display:grid;grid-template-columns:92px 1fr;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.art{height:92px;border-radius:10px}
+.a1{background:linear-gradient(160deg,#30475e 0%,#7d97a8 45%,#d9c7a3 100%)}
+.a2{background:linear-gradient(200deg,#3c4a43 0%,#8fa39a 55%,#cdbf9f 100%)}
+.a3{background:radial-gradient(circle at 40% 40%,#9fc4ff 0%,#2e5fa8 35%,#0d1730 75%)}
+.t{font:600 19px/1.2 "Cormorant Garamond",serif}
+.m{color:var(--mut);font-size:13px}
+.badge{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.badge.ok{color:var(--gold2);border-color:#5b4c2c}
+.chat{background:var(--panel);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;height:620px}
+.log{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
+.bot{background:#1e1b14;border:1px solid var(--line);align-self:flex-start}
+.me{background:var(--me);align-self:flex-end}
+.tools{font-size:11px;color:var(--gold);margin-top:6px;letter-spacing:.03em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 12px}
+.chip{background:transparent;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:13px Inter,sans-serif;cursor:pointer}
+.chip:hover{color:var(--ink);border-color:#5b4c2c}
+form{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line)}
+input{flex:1;background:#0f0e0c;border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:15px Inter,sans-serif}
+input:focus{outline:none;border-color:var(--gold)}
+button.send{background:var(--gold);color:#17150f;border:0;border-radius:12px;padding:0 20px;font:600 14px Inter,sans-serif;cursor:pointer}
+button.send:disabled{opacity:.5}
+.how{margin-top:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:860px){.how{grid-template-columns:1fr}}
+.how div{border-top:1px solid var(--line);padding-top:12px;color:var(--mut);font-size:13px}
+.how b{display:block;color:var(--ink);font-weight:600;margin-bottom:4px}
+code{background:#1e1b14;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px;color:var(--gold2)}
+footer{margin-top:26px;color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><div class="brand">Mece<i>nai</i></div><div class="tag">AI sales concierge for artists and galleries · live demo</div></div>
+  <div class="tag">Demo artist is fictional · <a href="https://github.com/MonoVarTon/mecenai">Source on GitHub</a></div>
+</header>
+
+<div class="grid">
+  <section>
+    <h2>The catalogue</h2>
+    <p class="sub">Mira Solen — oil paintings. Prices are not shown here: the concierge quotes them only by the artist's rules.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="chat">
+    <div class="log" id="log">
+      <div class="msg bot">Good evening. I'm the artist's concierge. Ask me about her works, availability or a viewing — in any language.</div>
+    </div>
+    <div class="chips">
+      <button class="chip">What do you have from Quiet Harbors?</button>
+      <button class="chip">Сколько стоит Blue Orbit?</button>
+      <button class="chip">ما هي الأعمال المتوفرة؟</button>
+      <button class="chip">I'll pay $2,000 for Quiet Harbor I — deal?</button>
+    </div>
+    <form id="f"><input id="q" maxlength="500" placeholder="Ask about an artwork…" autocomplete="off"><button class="send" id="b">Send</button></form>
+  </section>
+</div>
+
+<div class="how">
+  <div><b>Tool calling</b>The model decides which tool to call; the code runs it: <code>find_artworks</code>, <code>get_price_rule</code>.</div>
+  <div><b>No invented prices</b>Prices come only from artist-approved rules and are enforced in server code. The concierge never negotiates.</div>
+  <div><b>Open to AI agents</b>The same catalogue is an MCP server: <code id="mcpurl">/mcp</code> — connect any MCP client.</div>
+</div>
+<footer>Model: gpt-oss-120b via Groq · built by <a href="https://github.com/MonoVarTon">Alexey</a> · <a href="https://369aether.net">369 Aether</a></footer>
+</div>
+<script>
+const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),b=document.getElementById('b');
+document.getElementById('mcpurl').textContent=location.origin+'/mcp/';
+function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;
+ if(tools&&tools.length){const t=document.createElement('div');t.className='tools';t.textContent='tools: '+tools.join(' → ');d.appendChild(t)}
+ log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+async function ask(text){if(!text.trim())return;add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
+ try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+  const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[])}
+ catch(e){wait.remove();add('Connection problem — please try again.','bot')}b.disabled=false;q.focus()}
+f.onsubmit=e=>{e.preventDefault();ask(q.value)};
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>ask(c.textContent));
+const tones={A1:'a1',A2:'a2',A3:'a3'};
+fetch('/catalog').then(r=>r.json()).then(c=>{document.getElementById('cards').innerHTML=c.artworks.map(a=>`
+ <div class="card"><div class="art ${tones[a.id]||'a1'}"></div><div><div class="t">${a.title}</div>
+ <div class="m">${a.series} · ${a.technique} · ${a.size_cm} cm · ${a.year}</div>
+ <span class="badge ${a.available?'ok':''}">${a.available?'Available':'Sold'}</span></div></div>`).join('')});
+</script>
+</body>
+</html>
