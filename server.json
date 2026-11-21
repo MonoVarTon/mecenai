@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.MonoVarTon/mecenai",
+  "title": "Mecenai",
+  "description": "Artist catalogue for AI agents: artworks, artist-approved prices, viewing requests.",
+  "repository": {
+    "url": "https://github.com/MonoVarTon/mecenai",
+    "source": "github"
+  },
+  "version": "0.4.0",
+  "websiteUrl": "https://mecenai.onrender.com",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mecenai.onrender.com/mcp/"
+    }
+  ]
+}
