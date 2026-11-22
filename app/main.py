@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
         yield
 
 
-app = FastAPI(title="Mecenai", version="0.7.0", lifespan=lifespan)
+app = FastAPI(title="Mecenai", version="0.8.0", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/mcp", mcp_http)
 
 # Simple abuse protection for the public demo: per-visitor and global daily caps.
@@ -67,6 +67,7 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: list[Turn] = Field(default_factory=list, max_length=20)
     lang: str | None = Field(default=None, pattern="^(en|ru|ar)$")
+    artwork_id: str | None = Field(default=None, max_length=60, pattern="^[a-z0-9-]+$")
 
 
 class ChatResponse(BaseModel):
@@ -80,6 +81,22 @@ def home() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
+EMBED_ANCESTORS = os.getenv("MECENAI_EMBED_ANCESTORS", "https://budzko.art https://www.budzko.art")
+
+
+@app.get("/embed", include_in_schema=False)
+def embed() -> FileResponse:
+    """Compact chat for the website widget; only the artist's site may frame it."""
+    return FileResponse(Path(__file__).parent / "static" / "embed.html",
+                        headers={"Content-Security-Policy": f"frame-ancestors 'self' {EMBED_ANCESTORS}",
+                                 "Cache-Control": "no-cache"})
+
+
+@app.get("/widget.js", include_in_schema=False)
+def widget() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "widget.js", media_type="application/javascript")
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "version": app.version}
@@ -91,7 +108,8 @@ def chat(req: ChatRequest, request: Request) -> ChatResponse:
     ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[-1].strip()
     _check_limits(ip)
     try:
-        return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history], req.lang, ip))
+        return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history], req.lang, ip,
+                                             req.artwork_id))
     except HTTPException:
         raise
     except Exception:  # model provider down or rate-limited: never leak details

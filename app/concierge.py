@@ -6,7 +6,7 @@ import os
 import re
 import secrets
 
-from .tools import TOOLS, run_tool
+from .tools import CATALOG, TOOLS, run_tool
 
 SYSTEM = (
     "You are Mecenai, a polite art concierge for the artist. Answer in the visitor's language, "
@@ -81,7 +81,7 @@ SAFE_PRICE_REPLY = {
 
 
 def answer(model, question: str, history: list[dict] | None = None, lang: str | None = None,
-           client: str = "anon") -> dict:
+           client: str = "anon", artwork_id: str | None = None) -> dict:
     messages = _clean_history(history)
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
@@ -91,6 +91,10 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
     for _ in range(MAX_STEPS):
         system = SYSTEM if lang not in LANGS else (
             SYSTEM + f" The visitor chose {LANGS[lang]}: answer only in {LANGS[lang]} for the whole conversation.")
+        art = next((a for a in CATALOG["artworks"] if a["id"] == artwork_id), None) if artwork_id else None
+        if art:
+            system += (f" The visitor is now on the page of the artwork '{art['title']}' (id {art['id']}); "
+                       "'this painting' means this artwork.")
         reply = model.create(system=system, tools=TOOLS, messages=messages)
         if reply["stop_reason"] != "tool_use":
             text = " ".join(b["text"] for b in reply["content"] if b["type"] == "text")

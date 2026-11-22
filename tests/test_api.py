@@ -153,3 +153,14 @@ def test_contact_limit_per_visitor(tmp_path, monkeypatch):
     res = [tools.run_tool("contact_artist", args, client="1.2.3.4")["ok"] for _ in range(3)]
     assert res == [True, True, False]
     assert tools.run_tool("contact_artist", args, client="5.6.7.8")["ok"] is True
+
+
+def test_embed_framing_policy_and_artwork_context():
+    r = client.get("/embed")
+    assert r.status_code == 200 and "frame-ancestors" in r.headers["content-security-policy"]
+    assert "budzko.art" in r.headers["content-security-policy"]
+    assert client.get("/docs").status_code == 404
+    ok = client.post("/chat", json={"message": "how much is this painting?", "artwork_id": "venus"},
+                     headers={"x-forwarded-for": "6.6.6.6"})
+    assert ok.status_code == 200
+    assert client.post("/chat", json={"message": "x", "artwork_id": "../etc"}).status_code == 422
