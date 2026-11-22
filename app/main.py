@@ -57,6 +57,19 @@ def _check_limits(ip: str) -> None:
     _day["count"] += 1
 
 
+def client_ip(request: Request) -> str:
+    """Render sits behind Cloudflare: CF-Connecting-IP / True-Client-IP are set by the edge and cannot be
+    forged by the visitor. X-Forwarded-For is a fallback for local runs only (tests, uvicorn)."""
+    for h in ("cf-connecting-ip", "true-client-ip"):
+        v = request.headers.get(h)
+        if v:
+            return v.strip()
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "?"
+
+
 class Turn(BaseModel):
     role: str = Field(pattern="^(user|assistant)$")
     content: str = Field(max_length=3000)
@@ -104,8 +117,7 @@ def health() -> dict:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest, request: Request) -> ChatResponse:
-    # The rightmost X-Forwarded-For entry is added by the platform proxy; the leftmost can be forged.
-    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[-1].strip()
+    ip = client_ip(request)
     _check_limits(ip)
     try:
         return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history], req.lang, ip,
