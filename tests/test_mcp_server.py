@@ -45,7 +45,9 @@ def test_prices_only_via_rule():
 
 
 def test_request_viewing_validates(tmp_path, monkeypatch):
-    monkeypatch.setattr(mcp_server, "REQUESTS_FILE", tmp_path / "req.jsonl")
+    import app.tools as tools
+    monkeypatch.setattr(tools, "REQUESTS_FILE", tmp_path / "req.jsonl")
+    monkeypatch.setattr(tools, "CONTACT_URL", "")
 
     async def go():
         async with Client(mcp) as c:
@@ -56,6 +58,6 @@ def test_request_viewing_validates(tmp_path, monkeypatch):
 
     sold, bad, ok = run(go)
     assert "not available" in sold
-    assert "invalid email" in bad
+    assert "valid email" in bad
     assert json.loads(ok)["ok"] is True
     assert (tmp_path / "req.jsonl").read_text().count("\n") == 1

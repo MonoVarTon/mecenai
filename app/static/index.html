@@ -113,7 +113,7 @@ function add(text,cls,tools){const d=document.createElement('div');d.className='
  log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 async function ask(text){if(!text.trim())return;const d=detect(text);if(d!==LANG)setLang(d,true);add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
  try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:hist.slice(-10),lang:LANG})});
-  const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[]);if(r.ok){hist.push({role:'user',content:text},{role:'assistant',content:j.reply})}}
+  const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[]);if(r.ok){hist.push({role:'user',content:text},{role:'assistant',content:j.reply,sig:j.sig})}}
  catch(e){wait.remove();add('Connection problem — please try again.','bot')}b.disabled=false;q.focus()}
 f.onsubmit=e=>{e.preventDefault();ask(q.value)};
 document.querySelectorAll('#langs button').forEach(x=>x.onclick=()=>setLang(x.dataset.l,false));setLang(LANG,false);

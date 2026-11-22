@@ -63,7 +63,8 @@ TOOLS.append({
 REQUESTS_FILE = Path(__file__).resolve().parent.parent / "data" / "requests.jsonl"
 CONTACT_URL = os.getenv("MECENAI_CONTACT_URL", "")          # e.g. https://budzko.art/api/contact
 CONTACT_DAILY_CAP = int(os.getenv("MECENAI_CONTACT_PER_DAY", "20"))
-_sent = {"date": "", "count": 0}
+CONTACT_PER_CLIENT = int(os.getenv("MECENAI_CONTACT_PER_CLIENT", "2"))
+_sent = {"date": "", "count": 0, "per": {}}
 SUBJECTS = {"purchase": "purchase", "viewing": "purchase", "barter": "general", "custom": "commission"}
 EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
@@ -117,7 +118,7 @@ def describe_price(rule: str) -> str:
     return "price on request"  # unknown rule: never guess
 
 
-def run_tool(name: str, args: dict):
+def run_tool(name: str, args: dict, client: str = "anon"):
     if name == "find_artworks":
         q = str(args.get("query") or args.get("series") or "").strip().lower().rstrip("s")
         if not q:
@@ -152,9 +153,10 @@ def run_tool(name: str, args: dict):
             return {"ok": False, "error": "the message is empty"}
         today = time.strftime("%Y-%m-%d", time.gmtime())
         if _sent["date"] != today:
-            _sent.update(date=today, count=0)
-        if _sent["count"] >= CONTACT_DAILY_CAP:
-            return {"ok": False, "error": "too many requests today — please write to the artist via the website"}
+            _sent.update(date=today, count=0, per={})
+        per = _sent.setdefault("per", {})
+        if _sent["count"] >= CONTACT_DAILY_CAP or per.get(client, 0) >= CONTACT_PER_CLIENT:
+            return {"ok": False, "error": "request limit reached — please write to the artist via the website form"}
         record = {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                   "kind": str(args.get("kind", "custom"))[:20], "artwork_id": str(args.get("artwork_id") or "")[:60],
                   "name": str(args.get("name") or "")[:100], "email": email[:200],
@@ -165,5 +167,6 @@ def run_tool(name: str, args: dict):
         if CONTACT_URL and not send_to_artist(record):
             return {"ok": False, "error": "sending failed — please use the contact form on the artist's website"}
         _sent["count"] += 1
+        per[client] = per.get(client, 0) + 1
         return {"ok": True, "status": "sent to the artist by email; she will reply personally to the visitor's email"}
     return {"error": f"unknown tool {name}"}

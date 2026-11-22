@@ -1,5 +1,10 @@
 """The agent loop: model asks for a tool -> our code runs it -> model continues -> final answer."""
+import hashlib
+import hmac
 import json
+import os
+import re
+import secrets
 
 from .tools import TOOLS, run_tool
 
@@ -35,10 +40,49 @@ MAX_STEPS = 5
 
 LANGS = {"en": "English", "ru": "Russian", "ar": "Arabic"}
 
+# Assistant turns in the history come back from the browser, so they are signed (HMAC, as in lesson 1):
+# a visitor cannot forge "the assistant already confirmed…" or invent earlier prices.
+_SECRET = (os.getenv("MECENAI_HISTORY_SECRET") or secrets.token_hex(32)).encode()
 
-def answer(model, question: str, history: list[dict] | None = None, lang: str | None = None) -> dict:
-    messages = [{"role": m["role"], "content": m["content"]} for m in (history or [])
-                if m.get("role") in ("user", "assistant") and isinstance(m.get("content"), str)][-10:]
+
+def sign(text: str) -> str:
+    return hmac.new(_SECRET, text.encode(), hashlib.sha256).hexdigest()
+
+
+def _clean_history(history: list[dict] | None) -> list[dict]:
+    out = []
+    for m in history or []:
+        role, content = m.get("role"), m.get("content")
+        if role not in ("user", "assistant") or not isinstance(content, str):
+            continue
+        if role == "assistant" and not hmac.compare_digest(str(m.get("sig") or ""), sign(content)):
+            continue  # forged or tampered assistant turn
+        out.append({"role": role, "content": content})
+    return out[-10:]
+
+
+_MONEY = re.compile(r"\$\s?(\d[\d,\s\u00a0\u202f]*)|(\d[\d,\s\u00a0\u202f]*)\s?(?:\$|USD|долл)")
+
+
+def _amounts(text: str) -> set[int]:
+    found = set()
+    for m in _MONEY.finditer(text):
+        digits = re.sub(r"\D", "", m.group(1) or m.group(2) or "")
+        if digits:
+            found.add(int(digits))
+    return found
+
+
+SAFE_PRICE_REPLY = {
+    "ru": "Уточню точную цену у художницы — могу передать ей ваш вопрос.",
+    "ar": "سأتحقق من السعر الدقيق مع الفنانة — يمكنني إرسال سؤالك إليها.",
+    "en": "Let me confirm the exact price with the artist — I can pass your question to her.",
+}
+
+
+def answer(model, question: str, history: list[dict] | None = None, lang: str | None = None,
+           client: str = "anon") -> dict:
+    messages = _clean_history(history)
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
     messages.append({"role": "user", "content": question})
@@ -50,7 +94,14 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
         reply = model.create(system=system, tools=TOOLS, messages=messages)
         if reply["stop_reason"] != "tool_use":
             text = " ".join(b["text"] for b in reply["content"] if b["type"] == "text")
-            return {"reply": text, "tool_calls": tool_calls}
+            # Output guard: every dollar amount must come from a tool result or the conversation itself.
+            allowed = set()
+            for m in messages:
+                c = m["content"]
+                allowed |= _amounts(c if isinstance(c, str) else json.dumps(c, ensure_ascii=False))
+            if _amounts(text) - allowed:
+                text = SAFE_PRICE_REPLY.get(lang or "en", SAFE_PRICE_REPLY["en"])
+            return {"reply": text, "tool_calls": tool_calls, "sig": sign(text)}
 
         results = []
         for call in (b for b in reply["content"] if b["type"] == "tool_use"):
@@ -58,11 +109,12 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
             results.append({
                 "type": "tool_result",
                 "tool_use_id": call["id"],
-                "content": json.dumps(run_tool(call["name"], call["input"]), ensure_ascii=False),
+                "content": json.dumps(run_tool(call["name"], call["input"], client), ensure_ascii=False),
             })
         messages += [
             {"role": "assistant", "content": reply["content"]},
             {"role": "user", "content": results},
         ]
 
-    return {"reply": "Let me check with the artist and come back to you.", "tool_calls": tool_calls}
+    text = "Let me check with the artist and come back to you."
+    return {"reply": text, "tool_calls": tool_calls, "sig": sign(text)}

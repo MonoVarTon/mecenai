@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
         yield
 
 
-app = FastAPI(title="Mecenai", version="0.6.2", lifespan=lifespan)
+app = FastAPI(title="Mecenai", version="0.7.0", lifespan=lifespan)
 app.mount("/mcp", mcp_http)
 
 # Simple abuse protection for the public demo: per-visitor and global daily caps.
@@ -59,7 +59,8 @@ def _check_limits(ip: str) -> None:
 
 class Turn(BaseModel):
     role: str = Field(pattern="^(user|assistant)$")
-    content: str = Field(max_length=1500)
+    content: str = Field(max_length=3000)
+    sig: str | None = Field(default=None, max_length=128)
 
 
 class ChatRequest(BaseModel):
@@ -71,6 +72,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     tool_calls: list[str]
+    sig: str = ""
 
 
 @app.get("/", include_in_schema=False)
@@ -85,15 +87,16 @@ def health() -> dict:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest, request: Request) -> ChatResponse:
-    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0]
+    # The rightmost X-Forwarded-For entry is added by the platform proxy; the leftmost can be forged.
+    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[-1].strip()
     _check_limits(ip)
     try:
-        return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history], req.lang))
+        return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history], req.lang, ip))
     except HTTPException:
         raise
     except Exception:  # model provider down or rate-limited: never leak details
         return ChatResponse(reply="I can't reach the concierge's model right now — please try again shortly.",
-                            tool_calls=[])
+                            tool_calls=[], sig="")
 
 
 @app.get("/catalog")
