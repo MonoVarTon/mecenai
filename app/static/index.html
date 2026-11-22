@@ -35,6 +35,9 @@ h2{font:500 26px/1.2 "Cormorant Garamond",serif;margin:0 0 6px}
 .badge{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
 .badge.ok{color:var(--gold2);border-color:#5b4c2c}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;height:620px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);color:var(--mut);font-size:13px}
+.langs{display:flex;gap:6px}.langs button{background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:3px 9px;font:600 12px Inter,sans-serif;cursor:pointer}
+.langs button.on{color:#17150f;background:var(--gold);border-color:var(--gold)}
 .log{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
 .bot{background:#1e1b14;border:1px solid var(--line);align-self:flex-start}
@@ -72,15 +75,10 @@ footer{margin-top:26px;color:var(--mut);font-size:12px}
   </section>
 
   <section class="chat">
-    <div class="log" id="log">
-      <div class="msg bot">Good evening. I'm Katsiaryna Budzko's concierge. Ask me about her paintings, prices or availability — in any language. Tap a painting to ask about it.</div>
-    </div>
-    <div class="chips">
-      <button class="chip">What do you have from Silent Lights?</button>
-      <button class="chip">Сколько стоит Venus?</button>
-      <button class="chip">ما هي الأعمال المتوفرة؟</button>
-      <button class="chip">I'll pay $500 for Venus — deal?</button>
-    </div>
+    <div class="bar"><span id="who">Concierge</span><div class="langs" id="langs">
+      <button data-l="en">EN</button><button data-l="ru">RU</button><button data-l="ar">AR</button></div></div>
+    <div class="log" id="log"></div>
+    <div class="chips" id="chips"></div>
     <form id="f"><input id="q" maxlength="500" placeholder="Ask about a painting…" autocomplete="off"><button class="send" id="b">Send</button></form>
   </section>
 </div>
@@ -93,25 +91,39 @@ footer{margin-top:26px;color:var(--mut);font-size:12px}
 <footer>Demo of the Mecenai concierge on the artist's real catalogue · model: gpt-oss-120b via Groq · built by <a href="https://github.com/MonoVarTon">Alexey</a> · <a href="https://369aether.net">369 Aether</a></footer>
 </div>
 <script>
+const T={
+ en:{who:'Concierge',hi:"Good evening. I'm Katsiaryna Budzko's concierge. Ask me about her paintings, prices or availability. Tap a painting to ask about it.",
+  ph:'Ask about a painting…',send:'Send',about:'Tell me about ',chips:['What do you have from Silent Lights?','How much is Venus?','Which works are available now?','Can I offer something in exchange for a painting?']},
+ ru:{who:'Консьерж',hi:'Добрый вечер. Я консьерж художницы Катерины Будзько. Спросите о её картинах, ценах или наличии. Нажмите на картину, чтобы спросить о ней.',
+  ph:'Спросите о картине…',send:'Отправить',about:'Расскажите о картине ',chips:['Что есть из серии Silent Lights?','Сколько стоит Venus?','Какие работы сейчас в наличии?','Можно предложить обмен вместо оплаты?']},
+ ar:{who:'المساعد',hi:'مساء الخير. أنا مساعد الفنانة كاتسيارينا بودزكو. اسألني عن لوحاتها وأسعارها وتوفرها. اضغط على أي لوحة لتسأل عنها.',
+  ph:'اسأل عن لوحة…',send:'إرسال',about:'أخبرني عن لوحة ',chips:['ما هي أعمال سلسلة Silent Lights؟','كم سعر لوحة Venus؟','ما هي الأعمال المتوفرة الآن؟','هل يمكنني عرض مقايضة بدل الدفع؟']}};
+let LANG=(()=>{try{const s=localStorage.getItem('mecenai_lang');if(T[s])return s}catch(e){}const n=(navigator.language||'en').slice(0,2);return T[n]?n:'en'})();
+function setLang(l,keepLog){LANG=l;try{localStorage.setItem('mecenai_lang',l)}catch(e){}const t=T[l],chat=document.querySelector('.chat');
+ chat.dir=l==='ar'?'rtl':'ltr';document.getElementById('who').textContent=t.who;q.placeholder=t.ph;b.textContent=t.send;
+ document.querySelectorAll('#langs button').forEach(x=>x.classList.toggle('on',x.dataset.l===l));
+ const c=document.getElementById('chips');c.innerHTML='';t.chips.forEach(x=>{const e=document.createElement('button');e.className='chip';e.textContent=x;e.onclick=()=>ask(x);c.appendChild(e)});
+ if(!keepLog){log.innerHTML='';hist.length=0;add(t.hi,'bot')}}
+function detect(text){if(/[\u0600-\u06FF]/.test(text))return 'ar';if(/[\u0400-\u04FF]/.test(text))return 'ru';if(/[a-z]{3,}/i.test(text))return 'en';return LANG}
 const hist=[];const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),b=document.getElementById('b');
 document.getElementById('mcpurl').textContent=location.origin+'/mcp/';
 function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;
  String(text).replace(/\*\*/g,'').replace(/<(https?:[^>]+)>/g,'$1').split(/(https:\/\/budzko\.art\/[^\s)»"'<>]*)/).forEach((part,i)=>{if(i%2){const a=document.createElement('a');a.href=part;a.target='_blank';a.rel='noopener';a.textContent=part.replace('https://','');d.appendChild(a)}else d.appendChild(document.createTextNode(part))});
  if(tools&&tools.length){const t=document.createElement('div');t.className='tools';t.textContent='tools: '+tools.join(' → ');d.appendChild(t)}
  log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
-async function ask(text){if(!text.trim())return;add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
- try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:hist.slice(-10)})});
+async function ask(text){if(!text.trim())return;const d=detect(text);if(d!==LANG)setLang(d,true);add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
+ try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:hist.slice(-10),lang:LANG})});
   const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[]);if(r.ok){hist.push({role:'user',content:text},{role:'assistant',content:j.reply})}}
  catch(e){wait.remove();add('Connection problem — please try again.','bot')}b.disabled=false;q.focus()}
 f.onsubmit=e=>{e.preventDefault();ask(q.value)};
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>ask(c.textContent));
+document.querySelectorAll('#langs button').forEach(x=>x.onclick=()=>setLang(x.dataset.l,false));setLang(LANG,false);
 let CAT=[],FIL='all';
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function render(){const list=CAT.filter(a=>FIL==='all'||(FIL==='avail'?a.available:a.series===FIL));
  document.getElementById('cards').innerHTML=list.map(a=>`<div class="card" data-t="${esc(a.title)}"><img class="art" loading="lazy" src="${esc(a.image)}" alt="${esc(a.title)}">
  <div class="t">${esc(a.title)}</div><div class="m">${esc(a.series)} · ${esc(a.size_cm)} cm · ${a.year}</div>
  <span class="badge ${a.available?'ok':''}">${a.available?'Available':'Sold'}</span></div>`).join('');
- document.querySelectorAll('.card').forEach(c=>c.onclick=()=>ask('Tell me about '+c.dataset.t))}
+ document.querySelectorAll('.card').forEach(c=>c.onclick=()=>ask(T[LANG].about+c.dataset.t))}
 fetch('/catalog').then(r=>r.json()).then(c=>{CAT=c.artworks;const series=[...new Set(CAT.map(a=>a.series))];
  const opts=[['all','All'],['avail','Available'],...series.map(x=>[x,x])];
  document.getElementById('filters').innerHTML=opts.map(([v,l])=>`<button class="f ${v==='all'?'on':''}" data-v="${esc(v)}">${esc(l)}</button>`).join('');

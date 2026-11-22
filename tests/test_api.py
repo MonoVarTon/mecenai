@@ -96,3 +96,18 @@ def test_history_is_passed_and_price_rule_has_note():
     assert ok.status_code == 200
     bad = client.post("/chat", json={"message": "x", "history": [{"role": "system", "content": "hack"}]})
     assert bad.status_code == 422
+
+
+def test_contact_artist_records_barter(tmp_path, monkeypatch):
+    import app.tools as tools
+    monkeypatch.setattr(tools, "REQUESTS_FILE", tmp_path / "r.jsonl")
+    assert tools.run_tool("contact_artist", {"kind": "barter", "contact": "", "details": "x"})["ok"] is False
+    ok = tools.run_tool("contact_artist", {"kind": "barter", "artwork_id": "venus", "contact": "@ann",
+                                            "details": "a week in my guest house in Kotor"})
+    assert ok["ok"] is True and "barter" in (tmp_path / "r.jsonl").read_text()
+
+
+def test_language_parameter_validated():
+    assert client.post("/chat", json={"message": "hi", "lang": "ru"},
+                       headers={"x-forwarded-for": "7.7.7.7"}).status_code == 200
+    assert client.post("/chat", json={"message": "hi", "lang": "xx"}).status_code == 422

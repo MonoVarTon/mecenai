@@ -1,5 +1,6 @@
 """Tools the concierge may call. The model only *asks* for a tool; this code executes it."""
 import json
+import time
 from pathlib import Path
 
 CATALOG = json.loads((Path(__file__).parent / "catalog.json").read_text(encoding="utf-8"))
@@ -37,6 +38,25 @@ TOOLS = [
         },
     },
 ]
+
+TOOLS.append({
+    "name": "contact_artist",
+    "description": "Pass a visitor's request to the artist personally: purchase, viewing, barter offer or custom "
+                   "request. Use only after the visitor agreed and gave a contact.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "kind": {"type": "string", "enum": ["purchase", "viewing", "barter", "custom"]},
+            "artwork_id": {"type": "string", "description": "optional"},
+            "name": {"type": "string"},
+            "contact": {"type": "string", "description": "email, Telegram or phone"},
+            "details": {"type": "string", "description": "what the visitor wants or offers, in their words"},
+        },
+        "required": ["kind", "contact", "details"],
+    },
+})
+
+REQUESTS_FILE = Path(__file__).resolve().parent.parent / "data" / "requests.jsonl"
 
 PRIVATE = ("price_rule", "price_framed_usd", "price_note")
 
@@ -90,4 +110,16 @@ def run_tool(name: str, args: dict):
         if art.get("price_framed_usd") and art["available"]:
             out["price_framed"] = f"${art['price_framed_usd']:,}"
         return out
+    if name == "contact_artist":
+        contact = str(args.get("contact") or "").strip()
+        if len(contact) < 4:
+            return {"ok": False, "error": "a contact is required"}
+        record = {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                  "kind": str(args.get("kind", "custom"))[:20], "artwork_id": str(args.get("artwork_id") or "")[:60],
+                  "name": str(args.get("name") or "")[:100], "contact": contact[:200],
+                  "details": str(args.get("details") or "")[:1500]}
+        REQUESTS_FILE.parent.mkdir(exist_ok=True)
+        with REQUESTS_FILE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        return {"ok": True, "status": "passed to the artist, who will reply personally"}
     return {"error": f"unknown tool {name}"}
