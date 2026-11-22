@@ -98,13 +98,21 @@ def test_history_is_passed_and_price_rule_has_note():
     assert bad.status_code == 422
 
 
-def test_contact_artist_records_barter(tmp_path, monkeypatch):
+def test_contact_artist_requires_email_and_sends_via_form(tmp_path, monkeypatch):
     import app.tools as tools
     monkeypatch.setattr(tools, "REQUESTS_FILE", tmp_path / "r.jsonl")
-    assert tools.run_tool("contact_artist", {"kind": "barter", "contact": "", "details": "x"})["ok"] is False
-    ok = tools.run_tool("contact_artist", {"kind": "barter", "artwork_id": "venus", "contact": "@ann",
+    assert tools.run_tool("contact_artist", {"kind": "barter", "name": "Ann", "email": "@ann", "details": "x"})["ok"] is False
+    sent = []
+    monkeypatch.setattr(tools, "CONTACT_URL", "https://example.test/api/contact")
+    monkeypatch.setattr(tools, "send_to_artist", lambda rec: sent.append(rec) or True)
+    ok = tools.run_tool("contact_artist", {"kind": "barter", "artwork_id": "venus", "name": "Ann",
+                                            "email": "ann@example.com", "other_contact": "@ann",
                                             "details": "a week in my guest house in Kotor"})
-    assert ok["ok"] is True and "barter" in (tmp_path / "r.jsonl").read_text()
+    assert ok["ok"] is True and sent[0]["kind"] == "barter" and sent[0]["artwork_id"] == "venus"
+    monkeypatch.setattr(tools, "send_to_artist", lambda rec: False)
+    fail = tools.run_tool("contact_artist", {"kind": "purchase", "name": "Bob", "email": "bob@example.com",
+                                              "details": "I want Venus"})
+    assert fail["ok"] is False
 
 
 def test_language_parameter_validated():
