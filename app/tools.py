@@ -75,10 +75,12 @@ def run_tool(name: str, args: dict):
         return [public(a) for a in found]
     if name == "list_artworks":
         series = str(args.get("series") or "").strip().lower()
-        items = [a for a in CATALOG["artworks"]
-                 if (not series or series in a["series"].lower())
-                 and (not args.get("available_only") or a["available"])]
-        return [public(a, short=True) for a in items]
+        in_series = [a for a in CATALOG["artworks"] if not series or series in a["series"].lower()]
+        items = [a for a in in_series if not args.get("available_only") or a["available"]]
+        return {"total_in_selection": len(in_series),
+                "available": sum(a["available"] for a in in_series),
+                "sold": sum(not a["available"] for a in in_series),
+                "artworks": [public(a, short=True) for a in items]}
     if name == "get_price_rule":
         art = next((a for a in CATALOG["artworks"] if a["id"] == args["artwork_id"]), None)
         if art is None:

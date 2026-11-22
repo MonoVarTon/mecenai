@@ -86,7 +86,9 @@ def test_history_is_passed_and_price_rule_has_note():
     assert framed["price_framed"] == "$150"
     assert run_tool("get_price_rule", {"artwork_id": "luna"})["price"] == "sold"
     listed = run_tool("list_artworks", {"available_only": True})
-    assert len(listed) == 23 and all(a["available"] for a in listed)
+    assert listed["available"] == 23 and listed["sold"] == 6 and all(a["available"] for a in listed["artworks"])
+    planets = run_tool("list_artworks", {"series": "I am a Planet"})
+    assert (planets["total_in_selection"], planets["available"], planets["sold"]) == (10, 7, 3)
     hist = [{"role": "user", "content": "Tell me about Silent Lights"},
             {"role": "assistant", "content": "A Moment in Silence — $640."}]
     ok = client.post("/chat", json={"message": "and I am a Planet?", "history": hist},

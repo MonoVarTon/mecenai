@@ -31,7 +31,7 @@ def find_artworks(query: str) -> list[dict]:
 
 
 @mcp.tool()
-def list_artworks(series: str = "", available_only: bool = False) -> list[dict]:
+def list_artworks(series: str = "", available_only: bool = False) -> dict:
     """List artworks (titles, series, sizes, availability, links), optionally only available or one series."""
     return run_tool("list_artworks", {"series": series, "available_only": available_only})
 
