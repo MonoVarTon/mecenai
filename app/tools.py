@@ -144,6 +144,7 @@ def run_tool(name: str, args: dict):
         return out
     if name == "contact_artist":
         email = str(args.get("email") or args.get("contact") or "").strip()
+        email = email.translate({0x2011: "-", 0x2010: "-", 0x2013: "-", 0x00A0: None, 0x200B: None})
         if not EMAIL_RE.fullmatch(email):
             return {"ok": False, "error": "a valid email is required — the artist replies by email"}
         details = str(args.get("details") or "").strip()

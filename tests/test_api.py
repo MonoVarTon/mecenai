@@ -109,6 +109,8 @@ def test_contact_artist_requires_email_and_sends_via_form(tmp_path, monkeypatch)
                                             "email": "ann@example.com", "other_contact": "@ann",
                                             "details": "a week in my guest house in Kotor"})
     assert ok["ok"] is True and sent[0]["kind"] == "barter" and sent[0]["artwork_id"] == "venus"
+    tools.run_tool("contact_artist", {"kind": "purchase", "name": "A", "email": "anna\u2011test@example.com", "details": "x"})
+    assert sent[1]["email"] == "anna-test@example.com"
     monkeypatch.setattr(tools, "send_to_artist", lambda rec: False)
     fail = tools.run_tool("contact_artist", {"kind": "purchase", "name": "Bob", "email": "bob@example.com",
                                               "details": "I want Venus"})

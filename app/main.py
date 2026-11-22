@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
         yield
 
 
-app = FastAPI(title="Mecenai", version="0.6.1", lifespan=lifespan)
+app = FastAPI(title="Mecenai", version="0.6.2", lifespan=lifespan)
 app.mount("/mcp", mcp_http)
 
 # Simple abuse protection for the public demo: per-visitor and global daily caps.
