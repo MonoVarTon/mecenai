@@ -89,14 +89,14 @@ footer{margin-top:26px;color:var(--mut);font-size:12px}
 <footer>Model: gpt-oss-120b via Groq · built by <a href="https://github.com/MonoVarTon">Alexey</a> · <a href="https://369aether.net">369 Aether</a></footer>
 </div>
 <script>
-const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),b=document.getElementById('b');
+const hist=[];const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),b=document.getElementById('b');
 document.getElementById('mcpurl').textContent=location.origin+'/mcp/';
 function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;
  if(tools&&tools.length){const t=document.createElement('div');t.className='tools';t.textContent='tools: '+tools.join(' → ');d.appendChild(t)}
  log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 async function ask(text){if(!text.trim())return;add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
- try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
-  const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[])}
+ try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:hist.slice(-10)})});
+  const j=await r.json();wait.remove();add(r.ok?j.reply:(j.detail||'Please try again.'),'bot',r.ok?j.tool_calls:[]);if(r.ok){hist.push({role:'user',content:text},{role:'assistant',content:j.reply})}}
  catch(e){wait.remove();add('Connection problem — please try again.','bot')}b.disabled=false;q.focus()}
 f.onsubmit=e=>{e.preventDefault();ask(q.value)};
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>ask(c.textContent));

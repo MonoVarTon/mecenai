@@ -1,6 +1,7 @@
 """Model backends. v0.1 ships a scripted mock that speaks the Messages API format,
 so the service and its tests run offline, for free and deterministically."""
 import json
+import time
 
 from .tools import series_names
 
@@ -112,7 +113,15 @@ class OpenAICompatibleModel:
 
     def create(self, system: str, tools: list, messages: list) -> dict:
         body = {"model": self.model, "temperature": 0.2, **self.to_openai(system, tools, messages)}
-        r = self.client.post(self.url, json=body)
+        for attempt in range(4):  # retry + backoff on rate limits (429) and busy provider (5xx)
+            r = self.client.post(self.url, json=body)
+            if r.status_code not in (429, 500, 502, 503) or attempt == 3:
+                break
+            try:
+                wait = float(r.headers.get("retry-after", ""))
+            except ValueError:
+                wait = 2.0 ** attempt
+            time.sleep(min(max(wait, 0.5), 10.0))
         r.raise_for_status()
         return self.from_openai(r.json())
 

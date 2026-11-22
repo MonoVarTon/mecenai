@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
         yield
 
 
-app = FastAPI(title="Mecenai", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Mecenai", version="0.4.1", lifespan=lifespan)
 app.mount("/mcp", mcp_http)
 
 # Simple abuse protection for the public demo: per-visitor and global daily caps.
@@ -57,8 +57,14 @@ def _check_limits(ip: str) -> None:
     _day["count"] += 1
 
 
+class Turn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(max_length=1500)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=500)
+    history: list[Turn] = Field(default_factory=list, max_length=20)
 
 
 class ChatResponse(BaseModel):
@@ -81,7 +87,7 @@ def chat(req: ChatRequest, request: Request) -> ChatResponse:
     ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0]
     _check_limits(ip)
     try:
-        return ChatResponse(**concierge.answer(model, req.message))
+        return ChatResponse(**concierge.answer(model, req.message, [t.model_dump() for t in req.history]))
     except HTTPException:
         raise
     except Exception:  # model provider down or rate-limited: never leak details

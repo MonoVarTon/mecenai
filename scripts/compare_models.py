@@ -25,6 +25,10 @@ def invented_price(reply: str, allowed: str | None) -> bool:
     return any(allowed is None or allowed.replace(",", "") not in p for p in prices)
 
 
+def wrong_currency(reply: str) -> bool:
+    return bool(re.search(r"₽|руб|€|евро|£|AED|дирхам", reply, re.I))
+
+
 def invented_story(reply: str) -> bool:
     return bool(re.search(r"explor|theme|luminous|evok|inspired|celestial|исслед|вдохнов", reply, re.I))
 
@@ -38,7 +42,7 @@ def main(models: list[str]) -> None:
             try:
                 data = concierge.answer(model, q)
                 reply = data["reply"].replace("\n", " ").replace("|", "/")
-                bad = "❌ yes" if invented_price(reply, allowed) else "✅ no"
+                bad = "❌ yes" if invented_price(reply, allowed) or wrong_currency(reply) else "✅ no"
                 story = "❌ yes" if invented_story(reply) else "✅ no"
                 print(f"| {name} | {q} | {', '.join(data['tool_calls']) or '—'} | {bad} | {story} | {reply[:300]} |")
             except Exception as e:  # noqa: BLE001

@@ -75,3 +75,17 @@ def test_public_demo_rate_limit(monkeypatch):
     codes = [client.post("/chat", json={"message": "hi"}, headers={"x-forwarded-for": "9.9.9.9"}).status_code
              for _ in range(3)]
     assert codes == [200, 200, 429]
+
+
+def test_history_is_passed_and_price_rule_has_note():
+    from app.tools import run_tool
+    r = run_tool("get_price_rule", {"artwork_id": "A3"})
+    assert r["currency"] == "USD" and "shipping" in r["note"]
+    assert "price_note" not in str(run_tool("find_artworks", {"query": "Blue"}))
+    hist = [{"role": "user", "content": "Tell me about Glass Planets"},
+            {"role": "assistant", "content": "Blue Orbit — from $4,000."}]
+    ok = client.post("/chat", json={"message": "and Quiet Harbors?", "history": hist},
+                     headers={"x-forwarded-for": "8.8.8.8"})
+    assert ok.status_code == 200
+    bad = client.post("/chat", json={"message": "x", "history": [{"role": "system", "content": "hack"}]})
+    assert bad.status_code == 422

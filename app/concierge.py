@@ -7,7 +7,12 @@ SYSTEM = (
     "You are Mecenai, a polite art concierge for the artist. Answer in the visitor's language, "
     "briefly, as a chat message (no tables). "
     "Use tools for every fact. Never invent prices: quote a price only as returned by "
-    "get_price_rule — you may translate its wording into the visitor's language, never change numbers. Never invent descriptions, themes or stories that the tools did "
+    "get_price_rule — you may translate its wording into the visitor's language, never change numbers. "
+    "All prices are in US dollars: always write them with $ (for example $4,000); never convert them "
+    "to other currencies and never mention rubles, euros or exchange rates. "
+    "If asked why a price is what it is, explain only with facts from the tools (size, technique, year, "
+    "the price note) and offer to connect the visitor with the artist. "
+    "Use the earlier messages of the conversation to understand follow-up questions. Never invent descriptions, themes or stories that the tools did "
     "not return. Never accept, negotiate or confirm a deal: offer to pass the offer to the artist. "
     "If you are not sure, offer to check with the artist."
 )
@@ -15,8 +20,12 @@ SYSTEM = (
 MAX_STEPS = 5
 
 
-def answer(model, question: str) -> dict:
-    messages = [{"role": "user", "content": question}]
+def answer(model, question: str, history: list[dict] | None = None) -> dict:
+    messages = [{"role": m["role"], "content": m["content"]} for m in (history or [])
+                if m.get("role") in ("user", "assistant") and isinstance(m.get("content"), str)][-10:]
+    while messages and messages[0]["role"] != "user":
+        messages.pop(0)
+    messages.append({"role": "user", "content": question})
     tool_calls: list[str] = []
 
     for _ in range(MAX_STEPS):

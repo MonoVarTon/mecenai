@@ -49,10 +49,11 @@ def run_tool(name: str, args: dict):
             return []
         found = [a for a in CATALOG["artworks"] if q in a["series"].lower() or q in a["title"].lower()]
         # prices are never exposed here: only get_price_rule returns approved wording
-        return [{k: v for k, v in a.items() if k != "price_rule"} for a in found]
+        return [{k: v for k, v in a.items() if k not in ("price_rule", "price_note")} for a in found]
     if name == "get_price_rule":
         art = next((a for a in CATALOG["artworks"] if a["id"] == args["artwork_id"]), None)
         if art is None:
             return {"error": "unknown artwork"}
-        return {"artwork_id": art["id"], "price": describe_price(art["price_rule"])}
+        return {"artwork_id": art["id"], "price": describe_price(art["price_rule"]), "currency": "USD",
+                "note": art.get("price_note", "")}
     return {"error": f"unknown tool {name}"}

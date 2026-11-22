@@ -1,11 +1,38 @@
 {
   "artist": "Mira Solen (fictional demo artist)",
   "artworks": [
-    {"id": "A1", "title": "Quiet Harbor I", "series": "Quiet Harbors", "technique": "oil on linen",
-     "size_cm": "60x80", "year": 2025, "available": true, "price_rule": "on_request"},
-    {"id": "A2", "title": "Quiet Harbor II", "series": "Quiet Harbors", "technique": "oil on linen",
-     "size_cm": "50x70", "year": 2025, "available": false, "price_rule": "sold"},
-    {"id": "A3", "title": "Blue Orbit", "series": "Glass Planets", "technique": "oil on canvas",
-     "size_cm": "100x100", "year": 2026, "available": true, "price_rule": "from_usd:4000"}
+    {
+      "id": "A1",
+      "title": "Quiet Harbor I",
+      "series": "Quiet Harbors",
+      "technique": "oil on linen",
+      "size_cm": "60x80",
+      "year": 2025,
+      "available": true,
+      "price_rule": "on_request",
+      "price_note": "The artist quotes this work personally after a short conversation with the collector."
+    },
+    {
+      "id": "A2",
+      "title": "Quiet Harbor II",
+      "series": "Quiet Harbors",
+      "technique": "oil on linen",
+      "size_cm": "50x70",
+      "year": 2025,
+      "available": false,
+      "price_rule": "sold",
+      "price_note": "This work has been sold."
+    },
+    {
+      "id": "A3",
+      "title": "Blue Orbit",
+      "series": "Glass Planets",
+      "technique": "oil on canvas",
+      "size_cm": "100x100",
+      "year": 2026,
+      "available": true,
+      "price_rule": "from_usd:4000",
+      "price_note": "Starting price for the original. Framing and insured worldwide shipping are quoted separately by the artist."
+    }
   ]
 }
