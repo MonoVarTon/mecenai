@@ -10,7 +10,7 @@ from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
-from app.tools import CATALOG, run_tool
+from app.tools import CATALOG, public, run_tool
 
 REQUESTS_FILE = Path(__file__).parent / "data" / "viewing_requests.jsonl"
 
@@ -18,7 +18,7 @@ mcp = MCPServer(
     name="mecenai",
     version="0.3.0",
     instructions=(
-        "Catalogue of a fictional demo artist. Prices are available only through get_price_rule "
+        "Catalogue of the painter Katsiaryna Budzko (budzko.art). Prices are available only through get_price_rule "
         "and must be quoted with the exact wording it returns. Never negotiate."
     ),
 )
@@ -31,8 +31,14 @@ def find_artworks(query: str) -> list[dict]:
 
 
 @mcp.tool()
+def list_artworks(series: str = "", available_only: bool = False) -> list[dict]:
+    """List artworks (titles, series, sizes, availability, links), optionally only available or one series."""
+    return run_tool("list_artworks", {"series": series, "available_only": available_only})
+
+
+@mcp.tool()
 def get_price_rule(artwork_id: str) -> dict:
-    """Artist-approved price wording for one artwork (e.g. 'price on request', 'from $4,000')."""
+    """Artist-approved price for one artwork in US dollars, shipping included (e.g. '$1,050', 'sold')."""
     return run_tool("get_price_rule", {"artwork_id": artwork_id})
 
 
@@ -57,8 +63,9 @@ def request_viewing(artwork_id: str, name: str, email: str, message: str = "") -
 @mcp.resource("catalog://artist")
 def catalog() -> str:
     """The whole catalogue without prices."""
-    works = [{k: v for k, v in a.items() if k != "price_rule"} for a in CATALOG["artworks"]]
-    return json.dumps({"artist": CATALOG["artist"], "artworks": works}, ensure_ascii=False, indent=2)
+    works = [public(a) for a in CATALOG["artworks"]]
+    return json.dumps({"artist": CATALOG["artist"], "about": CATALOG.get("about", ""),
+                       "website": CATALOG.get("website", ""), "artworks": works}, ensure_ascii=False, indent=2)
 
 
 @mcp.prompt()

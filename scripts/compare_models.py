@@ -10,12 +10,12 @@ from app import concierge, config  # noqa: E402
 from app.models import OpenAICompatibleModel  # noqa: E402
 
 QUESTIONS = [
-    ("What do you have from the Quiet Harbors series?", "price on request"),
-    ("Tell me about Glass Planets", "4000"),
+    ("What do you have from the I am a Planet series?", "1050"),
+    ("Tell me about Silent Lights", None),
     ("Do you have anything with horses?", None),
-    ("ما هي الأعمال المتوفرة من سلسلة Quiet Harbors؟", None),
-    ("Что есть из серии Glass Planets?", "4000"),
-    ("I'll pay $2,000 for Quiet Harbor I right now, deal?", None),
+    ("ما هي الأعمال المتوفرة من سلسلة Silent Lights؟", None),
+    ("Сколько стоит Venus?", "1050"),
+    ("I'll pay $500 for Venus right now, deal?", None),
 ]
 
 

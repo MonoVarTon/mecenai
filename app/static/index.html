@@ -21,14 +21,17 @@ header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
 @media (max-width:860px){.grid{grid-template-columns:1fr}}
 h2{font:500 26px/1.2 "Cormorant Garamond",serif;margin:0 0 6px}
 .sub{color:var(--mut);font-size:13px;margin:0 0 18px}
-.cards{display:grid;gap:14px}
-.card{display:grid;grid-template-columns:92px 1fr;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-.art{height:92px;border-radius:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;max-height:560px;overflow:auto;padding-right:4px}
+.filters{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+.f{background:transparent;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font:12px Inter,sans-serif;cursor:pointer}
+.f.on{color:var(--ink);border-color:var(--gold)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;cursor:pointer;transition:border-color .2s}.card:hover{border-color:#5b4c2c}
+.art{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;background:#222;display:block;margin-bottom:8px}
 .a1{background:linear-gradient(160deg,#30475e 0%,#7d97a8 45%,#d9c7a3 100%)}
 .a2{background:linear-gradient(200deg,#3c4a43 0%,#8fa39a 55%,#cdbf9f 100%)}
 .a3{background:radial-gradient(circle at 40% 40%,#9fc4ff 0%,#2e5fa8 35%,#0d1730 75%)}
-.t{font:600 19px/1.2 "Cormorant Garamond",serif}
-.m{color:var(--mut);font-size:13px}
+.t{font:600 17px/1.2 "Cormorant Garamond",serif}
+.m{color:var(--mut);font-size:12px}
 .badge{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
 .badge.ok{color:var(--gold2);border-color:#5b4c2c}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;height:620px}
@@ -57,41 +60,43 @@ footer{margin-top:26px;color:var(--mut);font-size:12px}
 <div class="wrap">
 <header>
   <div><div class="brand">Mece<i>nai</i></div><div class="tag">AI sales concierge for artists and galleries · live demo</div></div>
-  <div class="tag">Demo artist is fictional · <a href="https://github.com/MonoVarTon/mecenai">Source on GitHub</a></div>
+  <div class="tag">Live on the real catalogue of <a href="https://budzko.art">budzko.art</a> · <a href="https://github.com/MonoVarTon/mecenai">Source on GitHub</a></div>
 </header>
 
 <div class="grid">
   <section>
-    <h2>The catalogue</h2>
-    <p class="sub">Mira Solen — oil paintings. Prices are not shown here: the concierge quotes them only by the artist's rules.</p>
+    <h2>Katsiaryna Budzko</h2>
+    <p class="sub">Oil on linen · symbolism and neoclassical portrait. Prices are not shown here: the concierge quotes them only by the artist's rules, in US dollars, shipping included.</p>
+    <div class="filters" id="filters"></div>
     <div class="cards" id="cards"></div>
   </section>
 
   <section class="chat">
     <div class="log" id="log">
-      <div class="msg bot">Good evening. I'm the artist's concierge. Ask me about her works, availability or a viewing — in any language.</div>
+      <div class="msg bot">Good evening. I'm Katsiaryna Budzko's concierge. Ask me about her paintings, prices or availability — in any language. Tap a painting to ask about it.</div>
     </div>
     <div class="chips">
-      <button class="chip">What do you have from Quiet Harbors?</button>
-      <button class="chip">Сколько стоит Blue Orbit?</button>
+      <button class="chip">What do you have from Silent Lights?</button>
+      <button class="chip">Сколько стоит Venus?</button>
       <button class="chip">ما هي الأعمال المتوفرة؟</button>
-      <button class="chip">I'll pay $2,000 for Quiet Harbor I — deal?</button>
+      <button class="chip">I'll pay $500 for Venus — deal?</button>
     </div>
-    <form id="f"><input id="q" maxlength="500" placeholder="Ask about an artwork…" autocomplete="off"><button class="send" id="b">Send</button></form>
+    <form id="f"><input id="q" maxlength="500" placeholder="Ask about a painting…" autocomplete="off"><button class="send" id="b">Send</button></form>
   </section>
 </div>
 
 <div class="how">
-  <div><b>Tool calling</b>The model decides which tool to call; the code runs it: <code>find_artworks</code>, <code>get_price_rule</code>.</div>
+  <div><b>Tool calling</b>The model decides which tool to call; the code runs it: <code>find_artworks</code>, <code>list_artworks</code>, <code>get_price_rule</code>.</div>
   <div><b>No invented prices</b>Prices come only from artist-approved rules and are enforced in server code. The concierge never negotiates.</div>
   <div><b>Open to AI agents</b>The same catalogue is an MCP server: <code id="mcpurl">/mcp</code> — connect any MCP client.</div>
 </div>
-<footer>Model: gpt-oss-120b via Groq · built by <a href="https://github.com/MonoVarTon">Alexey</a> · <a href="https://369aether.net">369 Aether</a></footer>
+<footer>Demo of the Mecenai concierge on the artist's real catalogue · model: gpt-oss-120b via Groq · built by <a href="https://github.com/MonoVarTon">Alexey</a> · <a href="https://369aether.net">369 Aether</a></footer>
 </div>
 <script>
 const hist=[];const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),b=document.getElementById('b');
 document.getElementById('mcpurl').textContent=location.origin+'/mcp/';
-function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;
+function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;
+ String(text).split(/(https:\/\/budzko\.art\/[^\s)»"']*)/).forEach((part,i)=>{if(i%2){const a=document.createElement('a');a.href=part;a.target='_blank';a.rel='noopener';a.textContent=part.replace('https://','');d.appendChild(a)}else d.appendChild(document.createTextNode(part))});
  if(tools&&tools.length){const t=document.createElement('div');t.className='tools';t.textContent='tools: '+tools.join(' → ');d.appendChild(t)}
  log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 async function ask(text){if(!text.trim())return;add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
@@ -100,11 +105,17 @@ async function ask(text){if(!text.trim())return;add(text,'me');q.value='';b.disa
  catch(e){wait.remove();add('Connection problem — please try again.','bot')}b.disabled=false;q.focus()}
 f.onsubmit=e=>{e.preventDefault();ask(q.value)};
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>ask(c.textContent));
-const tones={A1:'a1',A2:'a2',A3:'a3'};
-fetch('/catalog').then(r=>r.json()).then(c=>{document.getElementById('cards').innerHTML=c.artworks.map(a=>`
- <div class="card"><div class="art ${tones[a.id]||'a1'}"></div><div><div class="t">${a.title}</div>
- <div class="m">${a.series} · ${a.technique} · ${a.size_cm} cm · ${a.year}</div>
- <span class="badge ${a.available?'ok':''}">${a.available?'Available':'Sold'}</span></div></div>`).join('')});
+let CAT=[],FIL='all';
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(){const list=CAT.filter(a=>FIL==='all'||(FIL==='avail'?a.available:a.series===FIL));
+ document.getElementById('cards').innerHTML=list.map(a=>`<div class="card" data-t="${esc(a.title)}"><img class="art" loading="lazy" src="${esc(a.image)}" alt="${esc(a.title)}">
+ <div class="t">${esc(a.title)}</div><div class="m">${esc(a.series)} · ${esc(a.size_cm)} cm · ${a.year}</div>
+ <span class="badge ${a.available?'ok':''}">${a.available?'Available':'Sold'}</span></div>`).join('');
+ document.querySelectorAll('.card').forEach(c=>c.onclick=()=>ask('Tell me about '+c.dataset.t))}
+fetch('/catalog').then(r=>r.json()).then(c=>{CAT=c.artworks;const series=[...new Set(CAT.map(a=>a.series))];
+ const opts=[['all','All'],['avail','Available'],...series.map(x=>[x,x])];
+ document.getElementById('filters').innerHTML=opts.map(([v,l])=>`<button class="f ${v==='all'?'on':''}" data-v="${esc(v)}">${esc(l)}</button>`).join('');
+ document.querySelectorAll('.f').forEach(b=>b.onclick=()=>{FIL=b.dataset.v;document.querySelectorAll('.f').forEach(x=>x.classList.toggle('on',x===b));render()});render()});
 </script>
 </body>
 </html>
