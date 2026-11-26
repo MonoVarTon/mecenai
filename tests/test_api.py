@@ -51,8 +51,23 @@ def test_loop_stops_after_max_steps():
                                  "input": {"query": "Silent Lights"}}]}
 
     data = concierge.answer(StuckModel(), "hi")
-    assert len(data["tool_calls"]) == concierge.MAX_STEPS
+    assert len(data["tool_calls"]) == concierge.MAX_STEPS - 1  # last step gets no tools
     assert "check with the artist" in data["reply"]
+    assert "художниц" in concierge.answer(StuckModel(), "hi", lang="ru")["reply"]
+
+
+def test_wrong_keyboard_layout_is_read_as_russian():
+    assert concierge.fix_layout("ghbdtn hfccrf;b rfrbt cfvst ltitdst rfhnbys") == "привет расскажи какие самые дешевые картины"
+    assert concierge.fix_layout("How much is Venus?") == "How much is Venus?"
+    assert concierge.fix_layout("Venus") == "Venus"
+
+
+def test_list_artworks_sorts_by_price_with_approved_wording():
+    from app.tools import run_tool
+    res = run_tool("list_artworks", {"available_only": True, "sort": "price_asc"})
+    prices = [int(a["price"].lstrip("$from ").replace(",", "")) for a in res["artworks"] if "$" in a["price"]]
+    assert prices == sorted(prices) and prices
+    assert all("price_rule" not in a for a in res["artworks"])
 
 
 def test_find_artworks_hides_prices_and_matches_titles():

@@ -87,7 +87,7 @@ const hist=[];const log=document.getElementById('log'),f=document.getElementById
 
 function add(text,cls,tools){const d=document.createElement('div');d.className='msg '+cls;
  String(text).replace(/\*\*/g,'').replace(/<(https?:[^>]+)>/g,'$1').split(/(https:\/\/budzko\.art\/[^\s)»"'<>]*)/).forEach((part,i)=>{if(i%2){const a=document.createElement('a');a.href=part;a.target='_blank';a.rel='noopener';a.textContent=part.replace('https://','');d.appendChild(a)}else d.appendChild(document.createTextNode(part))});
- if(tools&&tools.length){const t=document.createElement('div');t.className='tools';t.textContent='tools: '+tools.join(' → ');d.appendChild(t)}
+ 
  log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 async function ask(text){if(!text.trim())return;const d=detect(text);if(d!==LANG)setLang(d,true);add(text,'me');q.value='';b.disabled=true;const wait=add('…','bot');
  try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:hist.slice(-10),lang:LANG,artwork_id:ART||null})});

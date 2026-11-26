@@ -37,6 +37,26 @@ SYSTEM = (
 
 MAX_STEPS = 5
 
+# "ghbdtn" -> "привет": a Russian visitor typing with the English keyboard layout.
+_EN = "qwertyuiop[]asdfghjkl;'zxcvbnm,.`QWERTYUIOP{}ASDFGHJKL:\"ZXCVBNM<>~"
+_RU = "йцукенгшщзхъфывапролджэячсмитьбюёЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ"
+_LAYOUT = str.maketrans(_EN, _RU)
+
+
+def fix_layout(text: str) -> str:
+    """Return the Russian reading of text typed in the wrong layout, or the text unchanged."""
+    if re.search(r"[а-яА-ЯёЁ]", text) or re.search(r"https?://|@", text):
+        return text
+    letters = [c for c in text.lower() if "a" <= c <= "z"]
+    if len(letters) < 4:
+        return text
+    en_vowels = sum(c in "aeiouy" for c in letters) / len(letters)
+    ru = text.translate(_LAYOUT)
+    ru_letters = [c for c in ru.lower() if "а" <= c <= "я" or c == "ё"]
+    ru_vowels = sum(c in "аеёиоуыэюя" for c in ru_letters) / max(len(ru_letters), 1)
+    return ru if en_vowels < 0.22 and ru_vowels > 0.3 else text
+
+
 
 LANGS = {"en": "English", "ru": "Russian", "ar": "Arabic"}
 
@@ -73,6 +93,12 @@ def _amounts(text: str) -> set[int]:
     return found
 
 
+FALLBACK_REPLY = {
+    "ru": "Уточню это у художницы и вернусь с ответом — могу передать ей ваш вопрос.",
+    "ar": "سأتحقق من ذلك مع الفنانة — يمكنني إرسال سؤالك إليها.",
+    "en": "Let me check with the artist and come back to you — I can pass your question to her.",
+}
+
 SAFE_PRICE_REPLY = {
     "ru": "Уточню точную цену у художницы — могу передать ей ваш вопрос.",
     "ar": "سأتحقق من السعر الدقيق مع الفنانة — يمكنني إرسال سؤالك إليها.",
@@ -85,17 +111,22 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
     messages = _clean_history(history)
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
-    messages.append({"role": "user", "content": question})
+    messages.append({"role": "user", "content": fix_layout(question)})
     tool_calls: list[str] = []
 
-    for _ in range(MAX_STEPS):
+    for step in range(MAX_STEPS):
+        last = step == MAX_STEPS - 1
         system = SYSTEM if lang not in LANGS else (
             SYSTEM + f" The visitor chose {LANGS[lang]}: answer only in {LANGS[lang]} for the whole conversation.")
         art = next((a for a in CATALOG["artworks"] if a["id"] == artwork_id), None) if artwork_id else None
         if art:
             system += (f" The visitor is now on the page of the artwork '{art['title']}' (id {art['id']}); "
                        "'this painting' means this artwork.")
-        reply = model.create(system=system, tools=TOOLS, messages=messages)
+        if last:  # out of tool budget: answer from what is already known
+            system += " Do not call tools any more: answer now from the tool results above."
+        reply = model.create(system=system, tools=[] if last else TOOLS, messages=messages)
+        if reply["stop_reason"] == "tool_use" and last:
+            break
         if reply["stop_reason"] != "tool_use":
             text = " ".join(b["text"] for b in reply["content"] if b["type"] == "text")
             # Output guard: every dollar amount must come from a tool result or the conversation itself.
@@ -120,5 +151,5 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
             {"role": "user", "content": results},
         ]
 
-    text = "Let me check with the artist and come back to you."
+    text = FALLBACK_REPLY.get(lang or "en", FALLBACK_REPLY["en"])
     return {"reply": text, "tool_calls": tool_calls, "sig": sign(text)}

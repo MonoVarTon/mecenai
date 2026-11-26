@@ -93,6 +93,8 @@ class OpenAICompatibleModel:
             else:  # tool results
                 for b in m["content"]:
                     out.append({"role": "tool", "tool_call_id": b["tool_use_id"], "content": b["content"]})
+        if not tools:
+            return {"messages": out}
         return {
             "messages": out,
             "tools": [{"type": "function", "function": {"name": t["name"], "description": t["description"],

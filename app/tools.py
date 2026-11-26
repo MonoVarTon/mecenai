@@ -20,13 +20,16 @@ TOOLS = [
     },
     {
         "name": "list_artworks",
-        "description": "List artworks in the catalogue (titles, series, sizes, availability, links), "
-                       "optionally only available ones or one series.",
+        "description": "List artworks in the catalogue (titles, series, sizes, availability, links and "
+                       "artist-approved prices in US dollars, shipping included), optionally only available ones "
+                       "or one series, optionally sorted by price. Use it for 'cheapest', 'under $X', 'what is "
+                       "available' questions — one call is enough.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "series": {"type": "string", "description": "optional series name"},
                 "available_only": {"type": "boolean"},
+                "sort": {"type": "string", "enum": ["price_asc", "price_desc"], "description": "optional"},
             },
         },
     },
@@ -118,6 +121,10 @@ def describe_price(rule: str) -> str:
     return "price on request"  # unknown rule: never guess
 
 
+def price_value(a: dict) -> int:
+    return int(a["price_rule"].split(":", 1)[1])
+
+
 def run_tool(name: str, args: dict, client: str = "anon"):
     if name == "find_artworks":
         q = str(args.get("query") or args.get("series") or "").strip().lower().rstrip("s")
@@ -130,10 +137,16 @@ def run_tool(name: str, args: dict, client: str = "anon"):
         series = str(args.get("series") or "").strip().lower()
         in_series = [a for a in CATALOG["artworks"] if not series or series in a["series"].lower()]
         items = [a for a in in_series if not args.get("available_only") or a["available"]]
+        if args.get("sort") in ("price_asc", "price_desc"):
+            priced = [a for a in items if a["price_rule"].startswith(("usd:", "from_usd:"))]
+            rest = [a for a in items if a not in priced]
+            priced.sort(key=price_value, reverse=args["sort"] == "price_desc")
+            items = priced + rest
         return {"total_in_selection": len(in_series),
                 "available": sum(a["available"] for a in in_series),
                 "sold": sum(not a["available"] for a in in_series),
-                "artworks": [public(a, short=True) for a in items]}
+                "currency": "USD, shipping included",
+                "artworks": [{**public(a, short=True), "price": describe_price(a["price_rule"])} for a in items]}
     if name == "get_price_rule":
         art = next((a for a in CATALOG["artworks"] if a["id"] == args["artwork_id"]), None)
         if art is None:
