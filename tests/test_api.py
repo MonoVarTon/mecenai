@@ -179,3 +179,9 @@ def test_embed_framing_policy_and_artwork_context():
                      headers={"x-forwarded-for": "6.6.6.6"})
     assert ok.status_code == 200
     assert client.post("/chat", json={"message": "x", "artwork_id": "../etc"}).status_code == 422
+
+
+def test_markdown_is_stripped_for_the_chat_window():
+    out = concierge.plain("- **One Look** (серия *Silent Lights*) — $95\n## Итог\n<https://budzko.art/gallery/one-look/>")
+    assert out == "- One Look (серия Silent Lights) — $95\nИтог\nhttps://budzko.art/gallery/one-look/"
+    assert concierge.plain("2 * 3 = 6") == "2 * 3 = 6"

@@ -9,7 +9,8 @@ import secrets
 from .tools import CATALOG, TOOLS, run_tool
 
 SYSTEM = (
-    "You are Mecenai, a polite art concierge for the artist. Answer in the visitor's language, "
+    "You are Mecenai, a polite art concierge for the artist Katsiaryna Budzko (a woman; in Russian say "
+    "'художница', her name is 'Катерина Будзько'). Answer in the visitor's language, "
     "briefly, as a chat message (no tables). "
     "Use tools for every fact. Never invent prices: quote a price only as returned by "
     "get_price_rule — you may translate its wording into the visitor's language, never change numbers. "
@@ -106,6 +107,14 @@ SAFE_PRICE_REPLY = {
 }
 
 
+def plain(text: str) -> str:
+    """The chat window shows plain text: strip Markdown the model sometimes adds anyway."""
+    text = re.sub(r"\*\*|__", "", text)
+    text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)
+    text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+    return re.sub(r"<(https?://[^>\s]+)>", r"\1", text)
+
+
 def answer(model, question: str, history: list[dict] | None = None, lang: str | None = None,
            client: str = "anon", artwork_id: str | None = None) -> dict:
     messages = _clean_history(history)
@@ -128,7 +137,7 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
         if reply["stop_reason"] == "tool_use" and last:
             break
         if reply["stop_reason"] != "tool_use":
-            text = " ".join(b["text"] for b in reply["content"] if b["type"] == "text")
+            text = plain(" ".join(b["text"] for b in reply["content"] if b["type"] == "text"))
             # Output guard: every dollar amount must come from a tool result or the conversation itself.
             allowed = set()
             for m in messages:
