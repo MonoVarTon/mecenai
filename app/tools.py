@@ -29,6 +29,8 @@ TOOLS = [
             "properties": {
                 "series": {"type": "string", "description": "optional series name"},
                 "available_only": {"type": "boolean"},
+                "miniatures_only": {"type": "boolean", "description": "small works (miniatures); "
+                                    "there is no series called 'miniatures'"},
                 "sort": {"type": "string", "enum": ["price_asc", "price_desc"], "description": "optional"},
             },
         },
@@ -136,6 +138,11 @@ def run_tool(name: str, args: dict, client: str = "anon"):
     if name == "list_artworks":
         series = str(args.get("series") or "").strip().lower()
         in_series = [a for a in CATALOG["artworks"] if not series or series in a["series"].lower()]
+        if series and not in_series:
+            return {"error": f"no series '{args.get('series')}'", "series": series_names(),
+                    "hint": "for small works use miniatures_only=true"}
+        if args.get("miniatures_only"):
+            in_series = [a for a in in_series if a.get("miniature")]
         items = [a for a in in_series if not args.get("available_only") or a["available"]]
         if args.get("sort") in ("price_asc", "price_desc"):
             priced = [a for a in items if a["price_rule"].startswith(("usd:", "from_usd:"))]

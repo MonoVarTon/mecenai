@@ -190,3 +190,11 @@ def test_markdown_is_stripped_for_the_chat_window():
 def test_formula_dollars_become_quotes_but_prices_stay():
     out = concierge.plain("(например, $I Hear$, $105) и $One Look$ — $95")
     assert out == "(например, «I Hear», $105) и «One Look» — $95"
+
+
+def test_miniatures_are_found_and_unknown_series_is_explained():
+    from app.tools import run_tool
+    mini = run_tool("list_artworks", {"miniatures_only": True, "available_only": True})
+    assert mini["artworks"] and all(a.get("miniature") for a in mini["artworks"])
+    wrong = run_tool("list_artworks", {"series": "миниатюры"})
+    assert "Silent Lights" in wrong["series"] and "miniatures_only" in wrong["hint"]
