@@ -112,6 +112,8 @@ def plain(text: str) -> str:
     text = re.sub(r"\*\*|__", "", text)
     text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)
     text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+    # "$I Hear$" (formula-style quoting) -> «I Hear»; real prices like "$95" are never touched
+    text = re.sub(r"\$([^\W\d_][^$\n]{0,80}?)\$", r"«\1»", text)
     return re.sub(r"<(https?://[^>\s]+)>", r"\1", text)
 
 
@@ -120,7 +122,10 @@ def answer(model, question: str, history: list[dict] | None = None, lang: str | 
     messages = _clean_history(history)
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
-    messages.append({"role": "user", "content": fix_layout(question)})
+    fixed = fix_layout(question)
+    if fixed != question:
+        lang = "ru"  # the browser guessed English from Latin letters, but the visitor writes Russian
+    messages.append({"role": "user", "content": fixed})
     tool_calls: list[str] = []
 
     for step in range(MAX_STEPS):

@@ -65,20 +65,20 @@ body{min-height:0}
   <div class="log" id="log"></div>
   <div class="chips" id="chips"></div>
   <form id="f"><input id="q" maxlength="500" placeholder="Ask about a painting…" autocomplete="off"><button class="send" id="b">Send</button></form>
-  <div class="note">AI concierge · requests reach the artist only after you confirm</div>
+  <div class="note" id="note">AI concierge · requests reach the artist only after you confirm</div>
 </section>
 <script>
 const P=new URLSearchParams(location.search);const ART=(P.get('art')||'').replace(/[^a-z0-9-]/g,'').slice(0,60);let ARTT='';
 const T={
  en:{who:'Concierge',hi:"Hello! I'm Katsiaryna Budzko's concierge. Ask me about her paintings, prices or availability.",
-  ph:'Ask about a painting…',art:'You are looking at ',send:'Send',about:'Tell me about ',chips:['Which works are available now?','What do you have from Silent Lights?','Can I offer something in exchange for a painting?'],here:['How much is this painting?','Tell me the story of this painting']},
+  ph:'Ask about a painting…',note:'AI concierge · requests reach the artist only after you confirm',art:'You are looking at ',send:'Send',about:'Tell me about ',chips:['Which works are available now?','What do you have from Silent Lights?','Can I offer something in exchange for a painting?'],here:['How much is this painting?','Tell me the story of this painting']},
  ru:{who:'Консьерж',hi:'Здравствуйте! Я консьерж художницы Катерины Будзько. Спросите о её картинах, ценах или наличии.',
-  ph:'Спросите о картине…',art:'Вы смотрите картину ',send:'Отправить',about:'Расскажите о картине ',chips:['Какие работы сейчас в наличии?','Что есть из серии Silent Lights?','Можно предложить обмен вместо оплаты?'],here:['Сколько стоит эта картина?','Расскажите историю этой картины']},
+  ph:'Спросите о картине…',note:'ИИ-консьерж · заявка уходит художнице только после вашего подтверждения',art:'Вы смотрите картину ',send:'Отправить',about:'Расскажите о картине ',chips:['Какие работы сейчас в наличии?','Что есть из серии Silent Lights?','Можно предложить обмен вместо оплаты?'],here:['Сколько стоит эта картина?','Расскажите историю этой картины']},
  ar:{who:'المساعد',hi:'مرحباً! أنا مساعد الفنانة كاتسيارينا بودزكو. اسألني عن لوحاتها وأسعارها وتوفرها.',
-  ph:'اسأل عن لوحة…',art:'أنت تشاهد لوحة ',send:'إرسال',about:'أخبرني عن لوحة ',chips:['ما هي الأعمال المتوفرة الآن؟','ما هي أعمال سلسلة Silent Lights؟','هل يمكنني عرض مقايضة بدل الدفع؟'],here:['كم سعر هذه اللوحة؟','أخبرني بقصة هذه اللوحة']}};
+  ph:'اسأل عن لوحة…',note:'مساعد ذكي · يصل طلبك إلى الفنانة فقط بعد تأكيدك',art:'أنت تشاهد لوحة ',send:'إرسال',about:'أخبرني عن لوحة ',chips:['ما هي الأعمال المتوفرة الآن؟','ما هي أعمال سلسلة Silent Lights؟','هل يمكنني عرض مقايضة بدل الدفع؟'],here:['كم سعر هذه اللوحة؟','أخبرني بقصة هذه اللوحة']}};
 let LANG=(()=>{const pl=P.get('lang');if(T[pl])return pl;try{const s=localStorage.getItem('mecenai_lang');if(T[s])return s}catch(e){}const n=(navigator.language||'en').slice(0,2);return T[n]?n:'en'})();
 function setLang(l,keepLog){LANG=l;try{localStorage.setItem('mecenai_lang',l)}catch(e){}const t=T[l],chat=document.querySelector('.chat');
- chat.dir=l==='ar'?'rtl':'ltr';document.getElementById('who').textContent=t.who;q.placeholder=t.ph;b.textContent=t.send;
+ chat.dir=l==='ar'?'rtl':'ltr';document.getElementById('who').textContent=t.who;q.placeholder=t.ph;document.getElementById('note').textContent=t.note;b.textContent=t.send;
  document.querySelectorAll('#langs button').forEach(x=>x.classList.toggle('on',x.dataset.l===l));
  const c=document.getElementById('chips');c.innerHTML='';(ARTT?t.here:t.chips).forEach(x=>{const e=document.createElement('button');e.className='chip';e.textContent=x;e.onclick=()=>ask(x);c.appendChild(e)});
  if(!keepLog){log.innerHTML='';hist.length=0;add(t.hi+(ARTT?' '+t.art+ARTT+'.':''),'bot')}}

@@ -185,3 +185,8 @@ def test_markdown_is_stripped_for_the_chat_window():
     out = concierge.plain("- **One Look** (серия *Silent Lights*) — $95\n## Итог\n<https://budzko.art/gallery/one-look/>")
     assert out == "- One Look (серия Silent Lights) — $95\nИтог\nhttps://budzko.art/gallery/one-look/"
     assert concierge.plain("2 * 3 = 6") == "2 * 3 = 6"
+
+
+def test_formula_dollars_become_quotes_but_prices_stay():
+    out = concierge.plain("(например, $I Hear$, $105) и $One Look$ — $95")
+    assert out == "(например, «I Hear», $105) и «One Look» — $95"
