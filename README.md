@@ -7,6 +7,8 @@ Mecenai answers collectors 24/7 in their own language, knows every artwork in th
 
 **▶ Live demo: [mecenai.onrender.com](https://mecenai.onrender.com)** · MCP endpoint: `https://mecenai.onrender.com/mcp/` (the free instance sleeps when idle — the first request may take up to a minute)
 
+**▶ In production: [budzko.art](https://budzko.art)** — the concierge of painter Katsiaryna Budzko, on every page of her site (button *Ask about a painting*).
+
 **Status:** v0.4 (November 2026) — concierge on a real LLM (Groq), model evaluation, an MCP server for other AI agents, and a public demo. This README describes where the product is going; each capability is marked with its current state.
 
 ## Why
@@ -99,9 +101,24 @@ Tests: `pytest -q` — they also run on every push (GitHub Actions).
 3. **Collectors' data is minimal and private** — privacy policy (including GDPR) from day one.
 4. **Every number in this README comes from a measurement.**
 
+## In production: budzko.art
+
+Mecenai runs on **[budzko.art](https://budzko.art)**, the website and shop of figurative painter Katsiaryna Budzko (29 works, two series).
+
+| What | How it is wired |
+|---|---|
+| Embed | one line on every page: `<script src="/mecenai-widget.js" defer></script>` — a copy of [`app/static/widget.js`](app/static/widget.js) |
+| Isolation | the chat lives in an iframe from `mecenai.onrender.com`; the site's CSP allows it with a single `frame-src`, nothing else is loosened |
+| Context | on a painting page (`/gallery/<id>/`) the widget passes the artwork id, so the concierge knows what the visitor is looking at |
+| Catalogue | [`app/catalog.json`](app/catalog.json) mirrors the site's public catalogue: titles, sizes, availability, price rules |
+| Hand-off | “contact the artist” requests go to the artist's inbox; the visitor can also buy directly through the site's checkout |
+| Protection | `frame-ancestors` lets only budzko.art embed the chat; per-visitor limits on messages and e-mails |
+
+The site itself lives in a separate private repository (`MonoVarTon/budzko-art`).
+
 ## Open and closed
 
-The engine, the MCP server, tests and evaluation results are open. Clients' catalogues, prices and conversations are never published; demos use a fictional artist.
+The engine, the MCP server, tests and evaluation results are open. Conversations are never published. The bundled catalogue is the public catalogue of budzko.art, used with the artist's consent; other clients' catalogues stay private.
 
 ## Built by
 
