@@ -122,4 +122,4 @@ The engine, the MCP server, tests and evaluation results are open. Conversations
 
 ## Built by
 
-[Alexey](https://github.com/MonoVarTon) — architecture, backend, automation, TON — at **369 Aether**, a studio building websites for artists and galleries worldwide.
+[Alexey](https://github.com/MonoVarTon) — architecture, backend, automation, TON — at **[369 Aether](https://369aether.net/)**, a studio building websites for artists and galleries worldwide.
